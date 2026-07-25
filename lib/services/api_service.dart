@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/constants/api_constants.dart';
 import '../models/order.dart';
 
 class FetchOrdersResponse {
@@ -16,17 +17,16 @@ class FetchOrdersResponse {
 }
 
 class ApiService {
-  static const String _cacheKey = 'cached_orders_list';
   String baseUrl;
   bool simulateError = false;
 
-  ApiService({this.baseUrl = 'https://6a635583b30b52361e1a2495.mockapi.io'});
+  ApiService({this.baseUrl = ApiConstants.defaultBaseUrl});
 
   Dio get _dio => Dio(
         BaseOptions(
           baseUrl: baseUrl,
-          connectTimeout: const Duration(seconds: 6),
-          receiveTimeout: const Duration(seconds: 6),
+          connectTimeout: ApiConstants.connectTimeout,
+          receiveTimeout: ApiConstants.receiveTimeout,
         ),
       );
 
@@ -44,7 +44,7 @@ class ApiService {
     }
 
     try {
-      final response = await _dio.get('/orders');
+      final response = await _dio.get(ApiConstants.ordersEndpoint);
 
       List data = [];
       if (response.data is List) {
@@ -53,7 +53,16 @@ class ApiService {
         data = response.data['orders'];
       }
 
-      final orders = data.map((e) => Order.fromJson(e)).toList();
+      final orders = List.generate(data.length, (index) {
+        final itemMap = data[index] is Map<String, dynamic>
+            ? Map<String, dynamic>.from(data[index] as Map)
+            : <String, dynamic>{};
+
+        final orderId = "ORD-${1000 + index + 1}";
+        itemMap['id'] = orderId;
+
+        return Order.fromJson(itemMap);
+      });
 
       // Cache live data to SharedPreferences
       await _cacheOrders(orders);
@@ -84,14 +93,14 @@ class ApiService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonList = orders.map((o) => o.toJson()).toList();
-      await prefs.setString(_cacheKey, jsonEncode(jsonList));
+      await prefs.setString(ApiConstants.cacheKey, jsonEncode(jsonList));
     } catch (_) {}
   }
 
   Future<List<Order>> _getCachedOrders() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_cacheKey);
+      final raw = prefs.getString(ApiConstants.cacheKey);
       if (raw != null && raw.isNotEmpty) {
         final List decoded = jsonDecode(raw);
         return decoded.map((e) => Order.fromJson(e)).toList();
@@ -100,101 +109,107 @@ class ApiService {
     return [];
   }
 
-  // Seed sample 8 orders for demo / fallback
+  // Seed sample 8 orders for demo / fallback with ORD-${1000 + index + 1}
   static List<Order> getSeedOrders() {
-    return [
-      Order(
-        id: '101',
-        customer: 'Alex Rivera',
-        itemsRaw: 'Wireless Headphones, Protective Case',
-        itemsList: [
-          OrderItem(name: 'Wireless Headphones', quantity: 1, price: 149.99),
-          OrderItem(name: 'Protective Case', quantity: 1, price: 19.99),
+    final rawSeedData = [
+      {
+        'customer': 'Alex Rivera',
+        'itemsRaw': 'Wireless Headphones, Protective Case',
+        'itemsList': [
+          OrderItem(name: 'Wireless Headphones', quantity: 1, price: 14999.00),
+          OrderItem(name: 'Protective Case', quantity: 1, price: 1999.00),
         ],
-        amount: 169.98,
-        status: 'Delivered',
-        placedAt: '2026-07-24T10:30:00Z',
-      ),
-      Order(
-        id: '102',
-        customer: 'Sophia Chen',
-        itemsRaw: 'Ergonomic Office Chair',
-        itemsList: [
-          OrderItem(name: 'Ergonomic Office Chair', quantity: 1, price: 299.00),
+        'amount': 16998.00,
+        'status': 'Delivered',
+        'placedAt': '2026-07-24T10:30:00Z',
+      },
+      {
+        'customer': 'Sophia Chen',
+        'itemsRaw': 'Ergonomic Office Chair',
+        'itemsList': [
+          OrderItem(name: 'Ergonomic Office Chair', quantity: 1, price: 29900.00),
         ],
-        amount: 299.00,
-        status: 'Shipped',
-        placedAt: '2026-07-24T12:15:00Z',
-      ),
-      Order(
-        id: '103',
-        customer: 'Marcus Johnson',
-        itemsRaw: 'Mechanical Keyboard, RGB Mousepad',
-        itemsList: [
-          OrderItem(name: 'Mechanical Keyboard', quantity: 1, price: 110.00),
-          OrderItem(name: 'RGB Mousepad', quantity: 1, price: 35.00),
+        'amount': 29900.00,
+        'status': 'Shipped',
+        'placedAt': '2026-07-24T12:15:00Z',
+      },
+      {
+        'customer': 'Marcus Johnson',
+        'itemsRaw': 'Mechanical Keyboard, RGB Mousepad',
+        'itemsList': [
+          OrderItem(name: 'Mechanical Keyboard', quantity: 1, price: 11000.00),
+          OrderItem(name: 'RGB Mousepad', quantity: 1, price: 3500.00),
         ],
-        amount: 145.00,
-        status: 'Processing',
-        placedAt: '2026-07-24T14:45:00Z',
-      ),
-      Order(
-        id: '104',
-        customer: 'Emma Watson',
-        itemsRaw: '4K Ultra HD Monitor 27"',
-        itemsList: [
-          OrderItem(name: '4K Ultra HD Monitor 27"', quantity: 1, price: 429.50),
+        'amount': 14500.00,
+        'status': 'Processing',
+        'placedAt': '2026-07-24T14:45:00Z',
+      },
+      {
+        'customer': 'Emma Watson',
+        'itemsRaw': '4K Ultra HD Monitor 27"',
+        'itemsList': [
+          OrderItem(name: '4K Ultra HD Monitor 27"', quantity: 1, price: 42950.00),
         ],
-        amount: 429.50,
-        status: 'Pending',
-        placedAt: '2026-07-24T16:00:00Z',
-      ),
-      Order(
-        id: '105',
-        customer: 'David Kim',
-        itemsRaw: 'USB-C Docking Station, HDMI Cable',
-        itemsList: [
-          OrderItem(name: 'USB-C Docking Station', quantity: 1, price: 89.99),
-          OrderItem(name: 'HDMI Cable (6ft)', quantity: 2, price: 12.00),
+        'amount': 42950.00,
+        'status': 'Pending',
+        'placedAt': '2026-07-24T16:00:00Z',
+      },
+      {
+        'customer': 'David Kim',
+        'itemsRaw': 'USB-C Docking Station, HDMI Cable',
+        'itemsList': [
+          OrderItem(name: 'USB-C Docking Station', quantity: 1, price: 8999.00),
+          OrderItem(name: 'HDMI Cable (6ft)', quantity: 2, price: 1200.00),
         ],
-        amount: 113.99,
-        status: 'Delivered',
-        placedAt: '2026-07-23T09:20:00Z',
-      ),
-      Order(
-        id: '106',
-        customer: 'Liam Gallagher',
-        itemsRaw: 'Smart Home Speaker',
-        itemsList: [
-          OrderItem(name: 'Smart Home Speaker', quantity: 1, price: 79.99),
+        'amount': 11399.00,
+        'status': 'Delivered',
+        'placedAt': '2026-07-23T09:20:00Z',
+      },
+      {
+        'customer': 'Liam Gallagher',
+        'itemsRaw': 'Smart Home Speaker',
+        'itemsList': [
+          OrderItem(name: 'Smart Home Speaker', quantity: 1, price: 7999.00),
         ],
-        amount: 79.99,
-        status: 'Cancelled',
-        placedAt: '2026-07-22T18:10:00Z',
-      ),
-      Order(
-        id: '107',
-        customer: 'Olivia Taylor',
-        itemsRaw: 'Laptop Stand, Bluetooth Trackpad',
-        itemsList: [
-          OrderItem(name: 'Laptop Stand', quantity: 1, price: 45.00),
-          OrderItem(name: 'Bluetooth Trackpad', quantity: 1, price: 65.00),
+        'amount': 7999.00,
+        'status': 'Cancelled',
+        'placedAt': '2026-07-22T18:10:00Z',
+      },
+      {
+        'customer': 'Olivia Taylor',
+        'itemsRaw': 'Laptop Stand, Bluetooth Trackpad',
+        'itemsList': [
+          OrderItem(name: 'Laptop Stand', quantity: 1, price: 4500.00),
+          OrderItem(name: 'Bluetooth Trackpad', quantity: 1, price: 6500.00),
         ],
-        amount: 110.00,
-        status: 'Shipped',
-        placedAt: '2026-07-24T08:05:00Z',
-      ),
-      Order(
-        id: '108',
-        customer: 'Ethan Brown',
-        itemsRaw: 'Noise Cancelling Earbuds',
-        itemsList: [
-          OrderItem(name: 'Noise Cancelling Earbuds', quantity: 1, price: 129.99),
+        'amount': 11000.00,
+        'status': 'Shipped',
+        'placedAt': '2026-07-24T08:05:00Z',
+      },
+      {
+        'customer': 'Ethan Brown',
+        'itemsRaw': 'Noise Cancelling Earbuds',
+        'itemsList': [
+          OrderItem(name: 'Noise Cancelling Earbuds', quantity: 1, price: 12999.00),
         ],
-        amount: 129.99,
-        status: 'Processing',
-        placedAt: '2026-07-24T17:30:00Z',
-      ),
+        'amount': 12999.00,
+        'status': 'Processing',
+        'placedAt': '2026-07-24T17:30:00Z',
+      },
     ];
+
+    return List.generate(rawSeedData.length, (index) {
+      final orderId = "ORD-${1000 + index + 1}";
+      final d = rawSeedData[index];
+      return Order(
+        id: orderId,
+        customer: d['customer'] as String,
+        itemsRaw: d['itemsRaw'] as String,
+        itemsList: d['itemsList'] as List<OrderItem>,
+        amount: d['amount'] as double,
+        status: d['status'] as String,
+        placedAt: d['placedAt'] as String,
+      );
+    });
   }
 }

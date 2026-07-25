@@ -160,121 +160,106 @@ class _VerticalTimelineState extends State<VerticalTimeline> with TickerProvider
             final isCurrent = index == activeIndex;
             final isLast = index == _steps.length - 1;
 
-            // Calculate progress for the line below this step
             final segmentStart = index / totalSegments;
             final segmentEnd = (index + 1) / totalSegments;
             final segmentProgress = targetProgressRatio == 0
                 ? 0.0
                 : ((currentProgress - segmentStart) / (segmentEnd - segmentStart)).clamp(0.0, 1.0);
 
-            // Step reveal factor for staggered node appearance
             final nodeReveal = targetProgressRatio == 0
                 ? (index == 0 ? 1.0 : 0.0)
                 : ((currentProgress - (segmentStart - 0.15)) / 0.25).clamp(0.0, 1.0);
 
-            return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Timeline Node & Line Column
-                  SizedBox(
-                    width: 40,
-                    child: Column(
-                      children: [
-                        // Animated Node Circle
-                        Transform.scale(
-                          scale: isCurrent
-                              ? 1.0 + (_pulseAnimation.value * 0.08)
-                              : (isCompleted ? 1.0 : 0.88),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            width: isCurrent ? 34 : 26,
-                            height: isCurrent ? 34 : 26,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isCompleted
-                                  ? (isCurrent ? const Color(0xFF4F46E5) : const Color(0xFF10B981))
-                                  : const Color(0xFFE5E7EB),
-                              boxShadow: isCurrent
-                                  ? [
-                                      BoxShadow(
-                                        color: const Color(0xFF4F46E5).withValues(
-                                          alpha: 0.25 + (_pulseAnimation.value * 0.25),
-                                        ),
-                                        blurRadius: 8 + (_pulseAnimation.value * 8),
-                                        spreadRadius: 2 + (_pulseAnimation.value * 3),
-                                      )
-                                    ]
-                                  : null,
-                            ),
-                            child: Icon(
-                              isCompleted ? (isCurrent ? _steps[index].icon : Icons.check_rounded) : Icons.circle,
-                              size: isCurrent ? 18 : 14,
-                              color: isCompleted ? Colors.white : const Color(0xFF9CA3AF),
-                            ),
-                          ),
-                        ),
-                        // Connecting Line with Smooth Filling
-                        if (!isLast)
-                          Expanded(
-                            child: Center(
-                              child: Container(
-                                width: 3,
-                                height: double.infinity,
-                                color: const Color(0xFFE5E7EB),
-                                child: Align(
-                                  alignment: Alignment.topCenter,
-                                  child: FractionallySizedBox(
-                                    heightFactor: segmentProgress,
-                                    child: Container(
-                                      color: const Color(0xFF10B981),
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 40,
+                  child: Column(
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: isCurrent ? 34 : 26,
+                        height: isCurrent ? 34 : 26,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isCompleted
+                              ? (isCurrent ? const Color(0xFF4F46E5) : const Color(0xFF10B981))
+                              : const Color(0xFFE5E7EB),
+                          boxShadow: isCurrent
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF4F46E5).withValues(
+                                      alpha: 0.25 + (_pulseAnimation.value * 0.25),
                                     ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Animated Content Column (Fade & Slide entrance)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 24.0),
-                      child: Transform.translate(
-                        offset: Offset((1.0 - nodeReveal) * 10, 0),
-                        child: Opacity(
-                          opacity: isCompleted ? (0.4 + (nodeReveal * 0.6)).clamp(0.0, 1.0) : 0.5,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                                    blurRadius: 8 + (_pulseAnimation.value * 8),
+                                    spreadRadius: 2 + (_pulseAnimation.value * 3),
+                                  )
+                                ]
+                              : null,
+                        ),
+                        child: Icon(
+                          isCompleted ? (isCurrent ? _steps[index].icon : Icons.check_rounded) : Icons.circle,
+                          size: isCurrent ? 18 : 14,
+                          color: isCompleted ? Colors.white : const Color(0xFF9CA3AF),
+                        ),
+                      ),
+                      if (!isLast)
+                        SizedBox(
+                          height: 42,
+                          width: 3,
+                          child: Stack(
                             children: [
-                              Text(
-                                _steps[index].title,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: isCurrent
-                                      ? FontWeight.bold
-                                      : (isCompleted ? FontWeight.w600 : FontWeight.w500),
-                                  color: isCompleted ? const Color(0xFF111827) : const Color(0xFF9CA3AF),
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                _steps[index].description,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: isCompleted ? const Color(0xFF6B7280) : const Color(0xFF9CA3AF),
+                              Container(color: const Color(0xFFE5E7EB)),
+                              Align(
+                                alignment: Alignment.topCenter,
+                                child: FractionallySizedBox(
+                                  heightFactor: segmentProgress,
+                                  child: Container(color: const Color(0xFF10B981)),
                                 ),
                               ),
                             ],
                           ),
                         ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 24.0),
+                    child: Transform.translate(
+                      offset: Offset((1.0 - nodeReveal) * 10, 0),
+                      child: Opacity(
+                        opacity: isCompleted ? (0.4 + (nodeReveal * 0.6)).clamp(0.0, 1.0) : 0.4,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _steps[index].title,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: isCurrent
+                                    ? FontWeight.bold
+                                    : (isCompleted ? FontWeight.w600 : FontWeight.w500),
+                                color: isCompleted ? const Color(0xFF111827) : const Color(0xFF9CA3AF),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              _steps[index].description,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isCompleted ? const Color(0xFF6B7280) : const Color(0xFF9CA3AF),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             );
           }),
         );

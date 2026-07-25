@@ -26,6 +26,15 @@ class OrderItem {
       'price': price,
     };
   }
+
+  String get formattedPrice {
+    try {
+      final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+      return formatter.format(price * quantity);
+    } catch (_) {
+      return '₹${(price * quantity).toStringAsFixed(2)}';
+    }
+  }
 }
 
 class Order {
@@ -93,6 +102,19 @@ class Order {
     };
   }
 
+  String get formattedOrderId {
+    final clean = id.trim().toUpperCase();
+    if (clean.startsWith('ORD-')) return clean;
+    final numVal = int.tryParse(clean);
+    if (numVal != null) {
+      if (numVal < 1000) {
+        return "ORD-${1000 + numVal}";
+      }
+      return "ORD-$numVal";
+    }
+    return 'ORD-$clean';
+  }
+
   String get formattedDate {
     try {
       final dateTime = DateTime.parse(placedAt);
@@ -103,7 +125,12 @@ class Order {
   }
 
   String get formattedAmount {
-    return '\$${amount.toStringAsFixed(2)}';
+    try {
+      final formatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+      return formatter.format(amount);
+    } catch (_) {
+      return '₹${amount.toStringAsFixed(2)}';
+    }
   }
 
   String get normalizedStatus {

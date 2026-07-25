@@ -10,7 +10,7 @@ class StatusChip extends StatelessWidget {
     final config = _getStatusConfig(status);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: config.backgroundColor,
         borderRadius: BorderRadius.circular(20),
@@ -20,14 +20,18 @@ class StatusChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(config.icon, size: 14, color: config.textColor),
-          const SizedBox(width: 5),
-          Text(
-            config.label,
-            style: TextStyle(
-              color: config.textColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.3,
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              config.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: config.textColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
             ),
           ),
         ],
